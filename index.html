@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>台股研究室</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="layout">
+<aside class="side">
+  <div class="brand"><span class="mark" aria-hidden="true">⌁</span><div><strong>台股研究室</strong><small>AI STOCK ANALYZER</small></div></div>
+  <div class="nav-label">研究工具</div>
+  <nav class="nav" aria-label="主要功能" id="nav"></nav>
+  <div class="recent"><div class="nav-label">最近查詢</div><div class="nav" id="recent"></div></div>
+  <div class="sidefoot">台股盤後研究<br>行情與財報日期見各頁</div>
+</aside>
+<div>
+  <header class="top">
+    <div class="searchbox"><span class="mag" aria-hidden="true">⌕</span><input id="search" type="search" placeholder="搜尋台股代號或公司名稱" aria-label="搜尋台股代號或公司名稱" aria-controls="suggest" autocomplete="off"><kbd class="key" aria-hidden="true">/</kbd><div id="suggest" class="suggest" hidden></div></div>
+    <span class="demo" id="status" role="status"><i class="dot"></i> 載入資料</span>
+  </header>
+  <main id="main"></main>
+</div>
+</div>
+<div id="toast" class="toast" role="status" hidden></div>
+<script src="app.js" defer></script>
+</body>
+</html>
