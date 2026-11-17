@@ -5,7 +5,7 @@ let months = {};
 const feeds = {market:null,catalog:null,status:null};
 const details = new Map();
 const reports = new Map();
-const publicSources = '<div class="caption sources">來源 <a href="https://www.twse.com.tw/" target="_blank" rel="noopener">臺灣證券交易所</a> · <a href="https://www.tpex.org.tw/" target="_blank" rel="noopener">證券櫃檯買賣中心</a> · <a href="https://mops.twse.com.tw/" target="_blank" rel="noopener">公開資訊觀測站</a></div>';
+const publicSources = '<div class="caption sources">資料提供機關：金融監督管理委員會證券期貨局 · <a href="https://www.twse.com.tw/" target="_blank" rel="noopener">臺灣證券交易所</a> · <a href="https://www.tpex.org.tw/" target="_blank" rel="noopener">證券櫃檯買賣中心</a> · <a href="https://mops.twse.com.tw/" target="_blank" rel="noopener">公開資訊觀測站</a> · <a href="open-data.html">資料集與授權</a></div>';
 const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[ch]);
 const dateLabel = date => date ? date.replaceAll('-','/') : '資料未齊';
 const stockDetail = s => details.get(s.id);
@@ -299,6 +299,9 @@ function changeNumber(value,digits=2) {
 }
 function chipTables() {
   const selected = feeds.market.chips[marketData.chips];
+  const official = marketData.chips==='listed'
+    ? [null,'https://www.twse.com.tw/zh/trading/foreign/bfi82u.html']
+    : ['https://www.tpex.org.tw/zh-tw/market-infomation.html',null];
   const tables = [
     ['融資融券','融資為億元 · 融券為張',['融資餘額','融資日增減','融券餘額','融券日增減'],selected.margin, v => [fmt(v[0]),changeNumber(v[1]),fmt(v[2],0),changeNumber(v[3],0)]],
     ['三大法人買賣超','新台幣億元',['外資及陸資','投信','自營商','合計'],selected.org,v=>v.map(n=>changeNumber(n))]
@@ -306,11 +309,12 @@ function chipTables() {
   return '<div class="bar"><div><h2>近五日籌碼</h2><p class="caption">各欄以官方已公告日期為準</p></div><div class="seg" aria-label="籌碼市場">'+
     button('上市','chip-market',marketData.chips==='listed'?'active':'','listed')+
     button('上櫃','chip-market',marketData.chips==='otc'?'active':'','otc')+'</div></div>'+
-    '<div class="market-grid">'+tables.map(([name,note,columns,rows,format])=>
+    '<div class="market-grid">'+tables.map(([name,note,columns,rows,format],i)=>
+      (rows.length===0 && official[i] ? '<section class="card pad"><h2>'+name+'</h2><p class="caption">公開站提供官方查詢入口。</p><p><a href="'+official[i]+'" target="_blank" rel="noopener">前往官方報表 ↗</a></p></section>' :
       '<section class="card results"><div class="bar"><div><h2>'+name+'</h2><p class="caption">'+note+' · 最新 '+dateLabel(rows[0]?.date)+'</p></div></div><div class="tablewrap chip-table"><table><thead><tr><th scope="col">日期</th>'+
       columns.map(label=>'<th scope="col" class="num">'+label+'</th>').join('')+'</tr></thead><tbody>'+
       rows.map(row=>'<tr><th scope="row">'+dateLabel(row.date)+'</th>'+format(row.values).map(value=>'<td class="num">'+value+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>'+
-      (rows.length<5?'<p class="caption pad">目前僅有 '+rows.length+' 個已驗證交易日。</p>':'')+'</section>'
+      (rows.length<5?'<p class="caption pad">目前僅有 '+rows.length+' 個已驗證交易日。</p>':'')+'</section>')
     ).join('')+'</div>';
 }
 function market() {
