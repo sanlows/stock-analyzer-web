@@ -30,3 +30,25 @@ jobs:
           path: site
       - id: publish
         uses: actions/deploy-pages@v4
+      - name: Verify anonymous access from GitHub runner
+        env:
+          SITE_URL: ${{ steps.publish.outputs.page_url }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="${SITE_URL%/}"
+          observed="$(mktemp)"
+          for attempt in {1..12}; do
+            if curl --fail --silent --show-error "$base/data/status.json?verify=$GITHUB_SHA" -o "$observed" &&
+               cmp -s site/data/status.json "$observed"; then
+              break
+            fi
+            sleep 5
+          done
+          cmp site/data/status.json "$observed"
+          curl --fail --silent --show-error "$base/" -o "$observed"
+          grep -F '台股研究室' "$observed"
+          curl --fail --silent --show-error "$base/data/market.json" -o "$observed"
+          jq -e '(.indices.listed|length > 230) and (.indices.otc|length > 230)' "$observed"
+          curl --fail --silent --show-error "$base/data/stock/2330.json" -o "$observed"
+          jq -e '(.quarters|length == 8) and (.months|length == 36)' "$observed"
