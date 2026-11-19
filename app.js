@@ -184,10 +184,11 @@ function systemValuation(s) {
   const estimate = detail.systemValuation;
   if (!estimate) return '<div class="card">'+notice('系統估值尚未更新','下一次盤後更新完成後提供。')+'</div>';
   const header = '<div class="bar"><h2>系統估值</h2><span class="chip">程式推估</span></div>'+
-    '<p class="caption">行情基準 '+dateLabel(estimate.asOf)+' · 預估年度 '+estimate.year+' · '+esc(estimate.source)+'</p>';
+    '<p class="caption">行情基準 '+dateLabel(estimate.asOf)+' · 預估年度 '+estimate.year+' · '+esc(estimate.source)+'</p>'+
+    '<p class="caption">計算時間 '+(estimate.calculatedAt ? esc(new Date(estimate.calculatedAt).toLocaleString('zh-TW',{timeZone:'Asia/Taipei'})) : '未記錄')+'</p>';
   const history = estimate.history || [];
-  const historic = history.length ? '<section class="card pad"><h2>系統估值紀錄</h2><p class="caption">保存最近五次盤後可用推估。各列保留當時預估年度及資料月份。</p><div class="tablewrap"><table><thead><tr><th>估值日</th><th>預估年度</th><th>營收月份</th><th>基準 EPS</th><th>基準價格</th></tr></thead><tbody>'+
-    history.slice().reverse().map(row=>'<tr><td>'+dateLabel(row.asOf)+'</td><td>'+row.year+'</td><td>'+esc(row.latestMonth)+'</td><td>'+fmt(row.eps)+'</td><td>'+fmt(row.price)+'</td></tr>').join('')+'</tbody></table></div></section>' : '';
+  const historic = history.length ? '<section class="card pad"><h2>系統估值紀錄</h2><p class="caption">從本版起保存最近五個行情基準日的可用推估。同日重算更新紀錄；資料公告時間未完整追溯，這些快照僅供比較系統推估。</p><div class="tablewrap"><table><thead><tr><th>行情基準日</th><th>計算時間（台北）</th><th>預估年度</th><th>營收月份</th><th>基準 EPS</th><th>基準價格</th></tr></thead><tbody>'+
+    history.slice().reverse().map(row=>'<tr><td>'+dateLabel(row.asOf)+'</td><td>'+(row.calculatedAt ? esc(new Date(row.calculatedAt).toLocaleString('zh-TW',{timeZone:'Asia/Taipei'})) : '未記錄')+'</td><td>'+row.year+'</td><td>'+esc(row.latestMonth)+'</td><td>'+fmt(row.eps)+'</td><td>'+fmt(row.price)+'</td></tr>').join('')+'</tbody></table></div></section>' : '';
   if (estimate.status!=='可推估') return '<div class="stack"><section class="card pad">'+header+notice('目前無法建立估值',esc(estimate.reason))+'</section>'+historic+'</div>';
   return '<div class="stack"><section class="card pad">'+header+
     '<p class="sub">'+esc(estimate.reason)+'</p><p class="caption">季報 '+esc(estimate.latestQuarter)+' · 營收 '+esc(estimate.latestMonth)+
