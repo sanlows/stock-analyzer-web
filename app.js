@@ -178,6 +178,26 @@ function valuation(s) {
   inputs.map(([key,label])=>'<label class="field">'+label+'<input type="number" step="any" data-valuation="'+key+'" value="'+assumptions[key]+'"></label>').join('')+
   '</div></div><div class="metrics"><div class="card metric"><span class="muted small">推估 EPS</span><strong id="valEps">—</strong><small>元／股</small></div><div class="card metric"><span class="muted small">試算目標價</span><strong id="valPrice">—</strong><small>元／股</small></div><div class="card metric"><span class="muted small">相對收盤價</span><strong id="valDelta">—</strong><small>比較基準 '+fmt(s.price)+' 元</small></div></div><div class="callout">推估 EPS＝年營收 ×（1＋成長率）× 歸母淨利率 ÷ 股數。目標價＝推估 EPS × 本益比。</div></div>';
 }
+function systemValuation(s) {
+  const detail = stockDetail(s);
+  if (!detail || detail.loading) return '<div class="card">'+notice('正在載入系統估值','')+'</div>';
+  const estimate = detail.systemValuation;
+  if (!estimate) return '<div class="card">'+notice('系統估值尚未更新','下一次盤後更新完成後提供。')+'</div>';
+  const header = '<div class="bar"><h2>系統估值</h2><span class="chip">程式推估</span></div>'+
+    '<p class="caption">行情基準 '+dateLabel(estimate.asOf)+' · 預估年度 '+estimate.year+' · '+esc(estimate.source)+'</p>';
+  const history = estimate.history || [];
+  const historic = history.length ? '<section class="card pad"><h2>系統估值紀錄</h2><p class="caption">保存最近五次盤後可用推估。各列保留當時預估年度及資料月份。</p><div class="tablewrap"><table><thead><tr><th>估值日</th><th>預估年度</th><th>營收月份</th><th>基準 EPS</th><th>基準價格</th></tr></thead><tbody>'+
+    history.slice().reverse().map(row=>'<tr><td>'+dateLabel(row.asOf)+'</td><td>'+row.year+'</td><td>'+esc(row.latestMonth)+'</td><td>'+fmt(row.eps)+'</td><td>'+fmt(row.price)+'</td></tr>').join('')+'</tbody></table></div></section>' : '';
+  if (estimate.status!=='可推估') return '<div class="stack"><section class="card pad">'+header+notice('目前無法建立估值',esc(estimate.reason))+'</section>'+historic+'</div>';
+  return '<div class="stack"><section class="card pad">'+header+
+    '<p class="sub">'+esc(estimate.reason)+'</p><p class="caption">季報 '+esc(estimate.latestQuarter)+' · 營收 '+esc(estimate.latestMonth)+
+    ' · '+estimate.sampleQuarters+' 季實績／'+estimate.seasonalityYears+' 年季節性 · EPS 模型評級 '+esc(estimate.epsConfidence)+'</p></section>'+
+    '<div class="metrics">'+estimate.scenarios.map(row=>metric(row.name+'價格',fmt(row.price)+' 元',
+      'EPS '+fmt(row.eps)+' × PE '+fmt(row.pe)+' 倍 · 距收盤 '+signed(row.distancePct))).join('')+'</div>'+
+    '<section class="card pad"><h2>計算依據</h2><p class="sub">'+esc(estimate.note)+'</p>'+
+    '<p class="caption">'+esc(estimate.industry)+'，排除本公司後有 '+estimate.peerCount+' 家有效樣本。PE 為估值當日的同業分布。EPS 模型評級衡量歷史資料擬合程度，仍需後續季報確認。法人 forecast 來源確認後會另列發布日及預估年度。</p>'+
+    '<p class="caption">最新已公布月營收依過去同期占全年營收比重推算全年營收，再乘以近八季 EPS／營收轉換率。三組價格各自搭配第 25、50、75 百分位假設。</p></section>'+historic+'</div>';
+}
 function updateVal(persist=false) {
   const params = [...main.querySelectorAll('[data-valuation]')];
   if (!params.length) return;
@@ -196,8 +216,8 @@ function stockPage() {
   if(!s) return title('個股研究','輸入股票代號或公司名稱')+'<div class="card">'+notice('尚未載入股票資料','請稍後再查。')+'</div>';
   const d=stockDetail(s);
   const latest=applyPeriod(s,{quarter:Object.keys(periods)[0],month:Object.keys(months)[0]});
-  const tabs=[['overview','摘要'],['financial','財務與圖表'],['valuation','估值試算']];
-  const panel = state.tab==='valuation' ? valuation(s) : !d || d.loading ? '<div class="card">'+notice('正在載入個股資料','')+'</div>' :
+  const tabs=[['overview','摘要'],['financial','財務與圖表'],['system-valuation','系統估值'],['valuation','自訂估值']];
+  const panel = state.tab==='system-valuation' ? systemValuation(s) : state.tab==='valuation' ? valuation(s) : !d || d.loading ? '<div class="card">'+notice('正在載入個股資料','')+'</div>' :
     d.error || d.missing ? '<div class="card">'+notice('暫無個股資料','請稍後再查。')+'</div>' :
     state.tab==='financial' ? financial(s) :
     '<div class="stack"><div class="metrics">'+metric('收盤價',fmt(s.price),dateLabel(feeds.catalog.asOf)+' · '+signed(s.change,2))+
@@ -310,7 +330,8 @@ function chipTables() {
     button('上市','chip-market',marketData.chips==='listed'?'active':'','listed')+
     button('上櫃','chip-market',marketData.chips==='otc'?'active':'','otc')+'</div></div>'+
     '<div class="market-grid">'+tables.map(([name,note,columns,rows,format],i)=>
-      (rows.length===0 && official[i] ? '<section class="card pad"><h2>'+name+'</h2><p class="caption">公開站提供官方查詢入口。</p><p><a href="'+official[i]+'" target="_blank" rel="noopener">前往官方報表 ↗</a></p></section>' :
+      (rows.length===0 && official[i] ? '<section class="card pad"><h2>'+name+'</h2><p class="caption">公開站提供查閱入口。</p><p><a href="'+official[i]+'" target="_blank" rel="noopener">前往官方報表 ↗</a></p>'+
+      (marketData.chips==='listed' && i===1 ? '<p><a href="https://www.wantgoo.com/stock/institutional-investors/three-trade-for-trading-amount" target="_blank" rel="noopener">玩股網三大法人歷史查詢 ↗</a></p>' : '')+'</section>' :
       '<section class="card results"><div class="bar"><div><h2>'+name+'</h2><p class="caption">'+note+' · 最新 '+dateLabel(rows[0]?.date)+'</p></div></div><div class="tablewrap chip-table"><table><thead><tr><th scope="col">日期</th>'+
       columns.map(label=>'<th scope="col" class="num">'+label+'</th>').join('')+'</tr></thead><tbody>'+
       rows.map(row=>'<tr><th scope="row">'+dateLabel(row.date)+'</th>'+format(row.values).map(value=>'<td class="num">'+value+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>'+
