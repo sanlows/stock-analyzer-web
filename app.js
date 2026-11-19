@@ -336,7 +336,10 @@ function chipTables() {
       '<section class="card results"><div class="bar"><div><h2>'+name+'</h2><p class="caption">'+note+' · 最新 '+dateLabel(rows[0]?.date)+'</p></div></div><div class="tablewrap chip-table"><table><thead><tr><th scope="col">日期</th>'+
       columns.map(label=>'<th scope="col" class="num">'+label+'</th>').join('')+'</tr></thead><tbody>'+
       rows.map(row=>'<tr><th scope="row">'+dateLabel(row.date)+'</th>'+format(row.values).map(value=>'<td class="num">'+value+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>'+
-      (rows.length<5?'<p class="caption pad">目前僅有 '+rows.length+' 個已驗證交易日。</p>':'')+'</section>')
+      (rows.length<5?'<p class="caption pad">目前僅有 '+rows.length+' 個已驗證交易日。</p>':'')+
+      (i===1 ? '<p class="caption pad">資料來源：<a href="'+(marketData.chips==='listed' ? 'https://www.twse.com.tw/zh/trading/foreign/bfi82u.html' : 'https://www.tpex.org.tw/zh-tw/mainboard/trading/major-institutional/summary/day.html')+'" target="_blank" rel="noopener">'+(marketData.chips==='listed'?'臺灣證券交易所':'證券櫃檯買賣中心')+'官方統計 ↗</a>。外資及陸資不含外資自營商；自營商包含自行買賣與避險。依原始元金額換算億元，顯示值經四捨五入。'+
+      (rows[0]?.date < feeds.market.asOf ? ' 最新交易日資料待公告或取得，先顯示最近已驗證紀錄。' : '')+
+      (marketData.chips==='listed' ? ' <a href="https://www.wantgoo.com/stock/institutional-investors/three-trade-for-trading-amount" target="_blank" rel="noopener">玩股網對照 ↗</a>' : '')+'</p>' : '')+'</section>')
     ).join('')+'</div>';
 }
 function market() {
